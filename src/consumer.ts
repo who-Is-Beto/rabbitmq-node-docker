@@ -11,6 +11,7 @@ const rabbitMQSettings = {
 };
 
 const INITIAL_QUEUE = "jobs";
+const enterprise = "youtube";
 const msgs = [
   {
     name: "Beto",
@@ -36,7 +37,7 @@ const msgs = [
     email: "whoisbeto@gmail.com",
     phone: "123456789",
     address: "1234 Main St",
-    city: "Cancun",
+    city: "New York",
     state: "NY",
     zip: "12345",
     country: "USA",
@@ -53,7 +54,7 @@ const msgs = [
     email: "whoisbeto@gmail.com",
     phone: "123456789",
     address: "1234 Main St",
-    city: "North Pole",
+    city: "New York",
     state: "NY",
     zip: "12345",
     country: "USA",
@@ -65,7 +66,7 @@ const msgs = [
   }
 ];
 
-const connect = async (): Promise<void> => {
+const recibe = async (): Promise<void> => {
   try {
     const connection = await amqp.connect(rabbitMQSettings);
     console.log("Connected to RabbitMQ");
@@ -73,14 +74,26 @@ const connect = async (): Promise<void> => {
     const channel = await connection.createChannel();
     console.log("Channel created");
 
-    const queue = await channel.assertQueue(INITIAL_QUEUE);
+    await channel.assertQueue(INITIAL_QUEUE);
 
-    msgs.forEach((msg) => {
-      channel.sendToQueue(INITIAL_QUEUE, Buffer.from(JSON.stringify(msg)));
-      console.log(`Message sent: ${msg}`);
+    console.log(
+      "Waiting for messages in %s. To exit press CTRL+C",
+      INITIAL_QUEUE,
+      "messages from",
+      enterprise
+    );
+
+    channel.consume(INITIAL_QUEUE, (msg) => {
+      let employee = JSON.parse(msg!.content.toString());
+      console.log("Received %s", employee.name);
+      console.log(employee);
+
+      if (employee.city === "Cancun") {
+        channel.ack(msg!);
+      }
     });
   } catch (error) {
     console.error(error);
   }
 };
-export { connect, rabbitMQSettings };
+export { recibe, rabbitMQSettings };
